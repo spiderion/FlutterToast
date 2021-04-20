@@ -9,14 +9,11 @@ import android.os.Handler
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.view.WindowInsets
-import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import android.widget.Toast
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import kotlin.Exception
 
 internal class MethodCallHandlerImpl(var context: Context) : MethodCallHandler {
 
@@ -28,19 +25,17 @@ internal class MethodCallHandlerImpl(var context: Context) : MethodCallHandler {
                 val mMessage = call.argument<Any>("msg").toString()
                 val length = call.argument<Any>("length").toString()
                 val gravity = call.argument<Any>("gravity").toString()
-                val bgcolor = call.argument<Number>("bgcolor")
-                val textcolor = call.argument<Number>("textcolor")
-                val textSize = call.argument<Number>("fontSize")
-                val mGravity: Int
+                val bgcolor = call.argument<Number>("bgcolor") as? Int?
+                val textcolor = call.argument<Number>("textcolor") as? Int
+                val textSize = call.argument<Number>("fontSize") as? Int
 
-                mGravity = when (gravity) {
+                val mGravity: Int = when (gravity) {
                     "top" -> Gravity.TOP
                     "center" -> Gravity.CENTER
                     else -> Gravity.BOTTOM
                 }
 
-                val mDuration: Int
-                mDuration = if (length == "long") {
+                val mDuration: Int = if (length == "long") {
                     Toast.LENGTH_LONG
                 } else {
                     Toast.LENGTH_SHORT
@@ -51,13 +46,13 @@ internal class MethodCallHandlerImpl(var context: Context) : MethodCallHandler {
                     val text = layout.findViewById<TextView>(R.id.text)
                     text.text = mMessage
 
-                    val gradientDrawable: Drawable = if (Build.VERSION.SDK_INT >= 21) {
-                        context.getDrawable(R.drawable.corner)!!
+                    val gradientDrawable: Drawable? = if (Build.VERSION.SDK_INT >= 21) {
+                        context.getDrawable(R.drawable.corner)
                     } else {
                         context.resources.getDrawable(R.drawable.corner)
                     }
                     if (bgcolor != null) {
-                        gradientDrawable.setColorFilter(bgcolor.toInt(), PorterDuff.Mode.SRC_IN)
+                        gradientDrawable?.setColorFilter(bgcolor.toInt(), PorterDuff.Mode.SRC_IN)
                     }
                     text.background = gradientDrawable
                     if (textSize != null) {
@@ -73,20 +68,18 @@ internal class MethodCallHandlerImpl(var context: Context) : MethodCallHandler {
                     mToast = Toast.makeText(context, mMessage, mDuration)
                     if (Build.VERSION.SDK_INT < 30) {
                         try {
-                            val textView: TextView = mToast.view!!.findViewById(android.R.id.message)
+                            val textView: TextView? = mToast.view?.findViewById(android.R.id.message)
                             if (textSize != null) {
-                                textView.textSize = textSize.toFloat()
+                                textView?.textSize = textSize.toFloat()
                             }
                             if (textcolor != null) {
-                                textView.setTextColor(textcolor.toInt())
+                                textView?.setTextColor(textcolor.toInt())
                             }
                         } catch (e: Exception) {
 
                         }
                     }
                 }
-
-//                if(Build.VERSION.SDK_INT < 30) {
                 when (mGravity) {
                     Gravity.CENTER -> {
                         mToast.setGravity(mGravity, 0, 0)
@@ -98,12 +91,6 @@ internal class MethodCallHandlerImpl(var context: Context) : MethodCallHandler {
                         mToast.setGravity(mGravity, 0, 100)
                     }
                 }
-//                }
-
-//                val inputMethodManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-//                if(inputMethodManager.isAcceptingText) {
-//                    mToast.setGravity(Gravity.CENTER, 0, 0)
-//                }
 
                 if (context is Activity) {
                     (context as Activity).runOnUiThread { mToast.show() }
@@ -125,11 +112,11 @@ internal class MethodCallHandlerImpl(var context: Context) : MethodCallHandler {
     }
 
     fun resetToast() {
-        if (::mToast.isInitialized && mToast != null) {
+        if (::mToast.isInitialized) {
             if (mToast.view?.visibility != View.VISIBLE) {
                 mToast
             } else {
-                Handler().postDelayed(Runnable {
+                Handler().postDelayed({
                     resetToast()
                 }, 1000);
             }
